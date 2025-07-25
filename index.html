@@ -27,6 +27,11 @@
         z-index: 10;
         transition: opacity 0.5s ease;
       }
+      label {
+        display: block;
+        font-size: 12px;
+        margin-top: 4px;
+      }
     </style>
   </head>
   <body>
@@ -54,16 +59,31 @@
         for (let i = 0; i < 3; i++) {
           let group = createDiv().parent(controlsDiv);
           group.child(createP(`Plane ${i + 1} Controls`));
+
           let shapeSelect = createSelect().parent(group);
           shapeOptions.forEach(opt => shapeSelect.option(opt));
-          let colorPicker = createColorPicker(['#ff0000', '#0000ff', '#00aa00'][i]).parent(group);
+          shapeSelect.selected(random(shapeOptions));
+
+          let colorPicker = createColorPicker(color(190, 190, 190)).parent(group);
+
+          group.child(createSpan('Size')).style('display', 'block');
           let sizeSlider = createSlider(0, width, width / 2).parent(group);
-          let opacitySlider = createSlider(0, 255, 127).parent(group);
+
+          group.child(createSpan('Opacity')).style('display', 'block');
+          let opacitySlider = createSlider(0, 255, 255).parent(group);
+
           let invertCheckbox = createCheckbox('Invert', false).parent(group);
+
+          group.child(createSpan('X Offset')).style('display', 'block');
           let xSlider = createSlider(-width / 2, width / 2, 0).parent(group);
+
+          group.child(createSpan('Y Offset')).style('display', 'block');
           let ySlider = createSlider(-height / 2, height / 2, 0).parent(group);
 
-          controls.push({ shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider });
+          group.child(createSpan('Rotation')).style('display', 'block');
+          let rotationSlider = createSlider(0, TWO_PI, 0, 0.01).parent(group);
+
+          controls.push({ shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider, rotationSlider });
           pgLayers.push(createGraphics(width, height));
         }
 
@@ -76,7 +96,7 @@
         background(bgToggle.checked() ? 0 : 255);
 
         for (let i = 0; i < controls.length; i++) {
-          let { shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider } = controls[i];
+          let { shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider, rotationSlider } = controls[i];
           let pg = pgLayers[i];
           pg.clear();
           drawShapeSystem(
@@ -87,7 +107,8 @@
             sizeSlider.value(),
             invertCheckbox.checked(),
             xSlider.value(),
-            ySlider.value()
+            ySlider.value(),
+            rotationSlider.value()
           );
           image(pg, 0, 0);
         }
@@ -112,7 +133,6 @@
 
       function exportCompositeImage() {
         let merged = createGraphics(width, height);
-        // Use transparent background
         merged.clear();
         for (let pg of pgLayers) {
           merged.image(pg, 0, 0);
@@ -120,9 +140,10 @@
         save(merged, 'triple-plane-export.png');
       }
 
-      function drawShapeSystem(pg, shapeType, col, alpha, size, invert, offsetX, offsetY) {
+      function drawShapeSystem(pg, shapeType, col, alpha, size, invert, offsetX, offsetY, rotation) {
         pg.push();
         pg.translate(width / 2 + offsetX, height / 2 + offsetY);
+        pg.rotate(rotation);
         pg.fill(red(col), green(col), blue(col), alpha);
         pg.strokeWeight(0);
 
