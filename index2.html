@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Triple Plane Shape System - Fullscreen with Auto-Hide UI</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+      }
+      canvas {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 0;
+      }
+      #controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+        z-index: 10;
+        transition: opacity 0.5s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls"></div>
+    <script>
+      let shapeOptions = [
+        'Circle',
+        'Square',
+        'Triangle',
+        'Vertical Panel',
+        'Horizontal Panel',
+        'Diagonal Panel',
+        'Diagonal Panel (Flipped)'
+      ];
+
+      let controls = [];
+      let pgLayers = [];
+      let lastInteraction = 0;
+      const UI_TIMEOUT = 3000; // milliseconds
+
+      function setup() {
+        createCanvas(windowWidth, windowHeight);
+        noStroke();
+
+        let controlsDiv = select('#controls');
+
+        for (let i = 0; i < 3; i++) {
+          let group = createDiv().parent(controlsDiv);
+          group.child(createP(`Plane ${i + 1} Controls`));
+          let shapeSelect = createSelect().parent(group);
+          shapeOptions.forEach(opt => shapeSelect.option(opt));
+          let colorPicker = createColorPicker(['#ff0000', '#0000ff', '#00aa00'][i]).parent(group);
+          let sizeSlider = createSlider(0, width, width / 2).parent(group);
+          let opacitySlider = createSlider(0, 255, 127).parent(group);
+          let invertCheckbox = createCheckbox('Invert', false).parent(group);
+          let xSlider = createSlider(-width / 2, width / 2, 0).parent(group);
+          let ySlider = createSlider(-height / 2, height / 2, 0).parent(group);
+
+          controls.push({ shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider });
+          pgLayers.push(createGraphics(width, height));
+        }
+      }
+
+      function draw() {
+        background(255);
+
+        for (let i = 0; i < controls.length; i++) {
+          let { shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider } = controls[i];
+          let pg = pgLayers[i];
+          pg.clear();
+          drawShapeSystem(
+            pg,
+            shapeSelect.value(),
+            colorPicker.color(),
+            opacitySlider.value(),
+            sizeSlider.value(),
+            invertCheckbox.checked(),
+            xSlider.value(),
+            ySlider.value()
+          );
+          image(pg, 0, 0);
+        }
+
+        // Auto-hide UI
+        if (millis() - lastInteraction > UI_TIMEOUT) {
+          select('#controls').style('opacity', '0');
+        } else {
+          select('#controls').style('opacity', '1');
+        }
+      }
+
+      function mouseMoved() {
+        lastInteraction = millis();
+      }
+
+      function windowResized() {
+        resizeCanvas(windowWidth, windowHeight);
+        for (let i = 0; i < pgLayers.length; i++) {
+          pgLayers[i] = createGraphics(windowWidth, windowHeight);
+        }
+      }
+
+      function drawShapeSystem(pg, shape, colorVal, opacity, size, inverted, offsetX, offsetY) {
+        pg.push();
+        pg.translate(width / 2 + offsetX, height / 2 + offsetY);
+        pg.noStroke();
+        pg.fill(red(colorVal), green(colorVal), blue(colorVal), opacity);
+
+        switch (shape) {
+          case 'Circle':
+            drawCircle(pg, colorVal, inverted, size, opacity);
+            break;
+          case 'Square':
+            drawSquare(pg, colorVal, inverted, size, opacity);
+            break;
+          case 'Triangle':
+            drawTriangle(pg, colorVal, inverted, size);
+            break;
+          case 'Vertical Panel':
+            drawVerticalPanel(pg, colorVal, inverted, size);
+            break;
+          case 'Horizontal Panel':
+            drawHorizontalPanel(pg, colorVal, inverted, size);
+            break;
+          case 'Diagonal Panel':
+            drawDiagonalPanel(pg, colorVal, inverted, size);
+            break;
+          case 'Diagonal Panel (Flipped)':
+            drawDiagonalPanelFlipped(pg, colorVal, inverted, size);
+            break;
+        }
+        pg.pop();
+      }
+
+      function drawCircle(pg, colorVal, inverted, size, opacity) {
+        if (inverted) {
+          pg.fill(red(colorVal), green(colorVal), blue(colorVal), opacity);
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, width, height);
+          pg.erase();
+          pg.ellipse(0, 0, size);
+          pg.noErase();
+        } else {
+          pg.ellipse(0, 0, size);
+        }
+      }
+
+      function drawSquare(pg, colorVal, inverted, size, opacity) {
+        if (inverted) {
+          pg.fill(red(colorVal), green(colorVal), blue(colorVal), opacity);
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, width, height);
+          pg.erase();
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, size, size);
+          pg.noErase();
+        } else {
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, size, size);
+        }
+      }
+
+      function drawTriangle(pg, colorVal, inverted, size) {
+        let s = constrain(size, 0, width);
+        if (inverted) {
+          pg.fill(colorVal);
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, width, height);
+          pg.erase();
+          pg.beginShape();
+          pg.vertex(0, -s / 2);
+          pg.vertex(-s / 2, s / 2);
+          pg.vertex(s / 2, s / 2);
+          pg.endShape(CLOSE);
+          pg.noErase();
+        } else {
+          pg.beginShape();
+          pg.vertex(0, -s / 2);
+          pg.vertex(-s / 2, s / 2);
+          pg.vertex(s / 2, s / 2);
+          pg.endShape(CLOSE);
+        }
+      }
+
+      function drawVerticalPanel(pg, colorVal, inverted, size) {
+        let s = constrain(size, 0, width);
+        if (inverted) {
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, width, height);
+          pg.erase();
+          pg.rect(0, 0, s, height);
+          pg.noErase();
+        } else {
+          pg.rect(0, 0, s, height);
+        }
+      }
+
+      function drawHorizontalPanel(pg, colorVal, inverted, size) {
+        let s = constrain(size, 0, height);
+        if (inverted) {
+          pg.rectMode(CENTER);
+          pg.rect(0, 0, width, height);
+          pg.erase();
+          pg.rect(0, 0, width, s);
+          pg.noErase();
+        } else {
+          pg.rect(0, 0, width, s);
+        }
+      }
+
+      function drawDiagonalPanel(pg, colorVal, inverted, size) {
+        let percent = constrain(size / width, 0, 1);
+        let dx = width * percent;
+        let dy = height * percent;
+
+        if (inverted) {
+          pg.beginShape();
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(width / 2, -height / 2);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(-width / 2, height / 2);
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(-width / 2 + dx, -height / 2);
+          pg.vertex(-width / 2, -height / 2 + dy);
+          pg.endShape(CLOSE);
+        } else {
+          pg.beginShape();
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(-width / 2 + dx, -height / 2);
+          pg.vertex(-width / 2, -height / 2 + dy);
+          pg.endShape(CLOSE);
+        }
+      }
+
+      function drawDiagonalPanelFlipped(pg, colorVal, inverted, size) {
+        let percent = constrain(size / width, 0, 1);
+        let dx = width * percent;
+        let dy = height * percent;
+
+        if (inverted) {
+          pg.beginShape();
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(width / 2, -height / 2);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(-width / 2, height / 2);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(width / 2 - dx, height / 2);
+          pg.vertex(width / 2, height / 2 - dy);
+          pg.endShape(CLOSE);
+        } else {
+          pg.beginShape();
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(width / 2 - dx, height / 2);
+          pg.vertex(width / 2, height / 2 - dy);
+          pg.endShape(CLOSE);
+        }
+      }
+    </script>
+  </body>
+</html>
