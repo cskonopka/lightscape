@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Triple Plane Shape System</title>
+    <title>Triple Plane Shape System with Position Control</title>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
   </head>
   <body>
@@ -17,84 +17,53 @@
         'Diagonal Panel (Flipped)'
       ];
 
-      let shape1Select, color1Picker, size1Slider, opacity1Slider, invert1Checkbox;
-      let shape2Select, color2Picker, size2Slider, opacity2Slider, invert2Checkbox;
-      let shape3Select, color3Picker, size3Slider, opacity3Slider, invert3Checkbox;
-
-      let pg1, pg2, pg3;
+      let controls = [];
+      let pgLayers = [];
 
       function setup() {
         createCanvas(500, 500);
         noStroke();
 
-        createP('Plane 1 Controls');
-        shape1Select = createSelect();
-        shapeOptions.forEach(opt => shape1Select.option(opt));
-        color1Picker = createColorPicker('#ff0000');
-        size1Slider = createSlider(0, width, width / 2);
-        opacity1Slider = createSlider(0, 255, 255);
-        invert1Checkbox = createCheckbox('Invert', false);
+        for (let i = 0; i < 3; i++) {
+          createP(`Plane ${i + 1} Controls`);
+          let shapeSelect = createSelect();
+          shapeOptions.forEach(opt => shapeSelect.option(opt));
+          let colorPicker = createColorPicker(['#ff0000', '#0000ff', '#00aa00'][i]);
+          let sizeSlider = createSlider(0, width, width / 2);
+          let opacitySlider = createSlider(0, 255, 127);
+          let invertCheckbox = createCheckbox('Invert', false);
+          let xSlider = createSlider(-width / 2, width / 2, 0);
+          let ySlider = createSlider(-height / 2, height / 2, 0);
 
-        createP('Plane 2 Controls');
-        shape2Select = createSelect();
-        shapeOptions.forEach(opt => shape2Select.option(opt));
-        color2Picker = createColorPicker('#0000ff');
-        size2Slider = createSlider(0, width, width / 2);
-        opacity2Slider = createSlider(0, 255, 127);
-        invert2Checkbox = createCheckbox('Invert', false);
-
-        createP('Plane 3 Controls');
-        shape3Select = createSelect();
-        shapeOptions.forEach(opt => shape3Select.option(opt));
-        color3Picker = createColorPicker('#00aa00');
-        size3Slider = createSlider(0, width, width / 2);
-        opacity3Slider = createSlider(0, 255, 127);
-        invert3Checkbox = createCheckbox('Invert', false);
-
-        pg1 = createGraphics(width, height);
-        pg2 = createGraphics(width, height);
-        pg3 = createGraphics(width, height);
+          controls.push({ shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider });
+          pgLayers.push(createGraphics(width, height));
+        }
       }
 
       function draw() {
         background(255);
 
-        pg1.clear();
-        drawShapeSystem(
-          pg1,
-          shape1Select.value(),
-          color1Picker.color(),
-          opacity1Slider.value(),
-          size1Slider.value(),
-          invert1Checkbox.checked()
-        );
-        image(pg1, 0, 0);
-
-        pg2.clear();
-        drawShapeSystem(
-          pg2,
-          shape2Select.value(),
-          color2Picker.color(),
-          opacity2Slider.value(),
-          size2Slider.value(),
-          invert2Checkbox.checked()
-        );
-        image(pg2, 0, 0);
-
-        pg3.clear();
-        drawShapeSystem(
-          pg3,
-          shape3Select.value(),
-          color3Picker.color(),
-          opacity3Slider.value(),
-          size3Slider.value(),
-          invert3Checkbox.checked()
-        );
-        image(pg3, 0, 0);
+        for (let i = 0; i < controls.length; i++) {
+          let { shapeSelect, colorPicker, sizeSlider, opacitySlider, invertCheckbox, xSlider, ySlider } = controls[i];
+          let pg = pgLayers[i];
+          pg.clear();
+          drawShapeSystem(
+            pg,
+            shapeSelect.value(),
+            colorPicker.color(),
+            opacitySlider.value(),
+            sizeSlider.value(),
+            invertCheckbox.checked(),
+            xSlider.value(),
+            ySlider.value()
+          );
+          image(pg, 0, 0);
+        }
       }
 
-      function drawShapeSystem(pg, shape, colorVal, opacity, size, inverted) {
+      function drawShapeSystem(pg, shape, colorVal, opacity, size, inverted, offsetX, offsetY) {
         pg.push();
+        pg.translate(width / 2 + offsetX, height / 2 + offsetY);
         pg.noStroke();
         pg.fill(red(colorVal), green(colorVal), blue(colorVal), opacity);
 
@@ -127,26 +96,28 @@
       function drawCircle(pg, colorVal, inverted, size, opacity) {
         if (inverted) {
           pg.fill(red(colorVal), green(colorVal), blue(colorVal), opacity);
+          pg.rectMode(CENTER);
           pg.rect(0, 0, width, height);
           pg.erase();
-          pg.ellipse(width / 2, height / 2, size);
+          pg.ellipse(0, 0, size);
           pg.noErase();
         } else {
-          pg.ellipse(width / 2, height / 2, size);
+          pg.ellipse(0, 0, size);
         }
       }
 
       function drawSquare(pg, colorVal, inverted, size, opacity) {
         if (inverted) {
           pg.fill(red(colorVal), green(colorVal), blue(colorVal), opacity);
+          pg.rectMode(CENTER);
           pg.rect(0, 0, width, height);
           pg.erase();
           pg.rectMode(CENTER);
-          pg.rect(width / 2, height / 2, size, size);
+          pg.rect(0, 0, size, size);
           pg.noErase();
         } else {
           pg.rectMode(CENTER);
-          pg.rect(width / 2, height / 2, size, size);
+          pg.rect(0, 0, size, size);
         }
       }
 
@@ -154,19 +125,20 @@
         let s = constrain(size, 0, width);
         if (inverted) {
           pg.fill(colorVal);
+          pg.rectMode(CENTER);
           pg.rect(0, 0, width, height);
           pg.erase();
           pg.beginShape();
-          pg.vertex(width / 2, height / 2 - s / 2);
-          pg.vertex(width / 2 - s / 2, height / 2 + s / 2);
-          pg.vertex(width / 2 + s / 2, height / 2 + s / 2);
+          pg.vertex(0, -s / 2);
+          pg.vertex(-s / 2, s / 2);
+          pg.vertex(s / 2, s / 2);
           pg.endShape(CLOSE);
           pg.noErase();
         } else {
           pg.beginShape();
-          pg.vertex(width / 2, height / 2 - s / 2);
-          pg.vertex(width / 2 - s / 2, height / 2 + s / 2);
-          pg.vertex(width / 2 + s / 2, height / 2 + s / 2);
+          pg.vertex(0, -s / 2);
+          pg.vertex(-s / 2, s / 2);
+          pg.vertex(s / 2, s / 2);
           pg.endShape(CLOSE);
         }
       }
@@ -174,6 +146,7 @@
       function drawVerticalPanel(pg, colorVal, inverted, size) {
         let s = constrain(size, 0, width);
         if (inverted) {
+          pg.rectMode(CENTER);
           pg.rect(0, 0, width, height);
           pg.erase();
           pg.rect(0, 0, s, height);
@@ -186,6 +159,7 @@
       function drawHorizontalPanel(pg, colorVal, inverted, size) {
         let s = constrain(size, 0, height);
         if (inverted) {
+          pg.rectMode(CENTER);
           pg.rect(0, 0, width, height);
           pg.erase();
           pg.rect(0, 0, width, s);
@@ -202,19 +176,19 @@
 
         if (inverted) {
           pg.beginShape();
-          pg.vertex(0, 0);
-          pg.vertex(width, 0);
-          pg.vertex(width, height);
-          pg.vertex(0, height);
-          pg.vertex(0, 0);
-          pg.vertex(dx, 0);
-          pg.vertex(0, dy);
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(width / 2, -height / 2);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(-width / 2, height / 2);
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(-width / 2 + dx, -height / 2);
+          pg.vertex(-width / 2, -height / 2 + dy);
           pg.endShape(CLOSE);
         } else {
           pg.beginShape();
-          pg.vertex(0, 0);
-          pg.vertex(dx, 0);
-          pg.vertex(0, dy);
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(-width / 2 + dx, -height / 2);
+          pg.vertex(-width / 2, -height / 2 + dy);
           pg.endShape(CLOSE);
         }
       }
@@ -226,19 +200,19 @@
 
         if (inverted) {
           pg.beginShape();
-          pg.vertex(0, 0);
-          pg.vertex(width, 0);
-          pg.vertex(width, height);
-          pg.vertex(0, height);
-          pg.vertex(width, height);
-          pg.vertex(width - dx, height);
-          pg.vertex(width, height - dy);
+          pg.vertex(-width / 2, -height / 2);
+          pg.vertex(width / 2, -height / 2);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(-width / 2, height / 2);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(width / 2 - dx, height / 2);
+          pg.vertex(width / 2, height / 2 - dy);
           pg.endShape(CLOSE);
         } else {
           pg.beginShape();
-          pg.vertex(width, height);
-          pg.vertex(width - dx, height);
-          pg.vertex(width, height - dy);
+          pg.vertex(width / 2, height / 2);
+          pg.vertex(width / 2 - dx, height / 2);
+          pg.vertex(width / 2, height / 2 - dy);
           pg.endShape(CLOSE);
         }
       }
