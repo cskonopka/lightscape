@@ -1,126 +1,91 @@
-let planes = [];
-let exportButton;
-let randomizeButton;
-const UI_TIMEOUT = 3000;
-let lastInteraction = 0;
+let planes = [
+  { opacity: 10, color: '#00FF00', shape: 'circle' },
+  { opacity: 50, color: '#FFFFFF', shape: 'diagonal_linear' },
+  { opacity: 60, color: '#FF0000', shape: 'rectangle' }
+];
+let planeGraphics = [];
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  pixelDensity(1);
-  noStroke();
-
+  let canvas = createCanvas(400, 400);
+  canvas.parent('canvas-container');
+  
   for (let i = 0; i < 3; i++) {
-    planes.push(createShapePlane(i));
+    planeGraphics[i] = createGraphics(400, 400);
   }
-
-  exportButton = createButton('Export').parent(select('#controls'));
-  exportButton.mousePressed(exportCompositeImage);
-
-  randomizeButton = createButton('Randomize').parent(select('#controls'));
-  randomizeButton.mousePressed(() => {
-    planes.forEach(plane => {
-      plane.shapeSelect.selected(random(shapeOptions));
-      plane.sizeSlider.value(random(width * 0.25, width));
-      plane.xSlider.value(random(-width / 2, width / 2));
-      plane.ySlider.value(random(-height / 2, height / 2));
-      plane.rotationSlider.value(random(TWO_PI));
+  
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById(`opacity${i}`).addEventListener('input', (e) => {
+      planes[i-1].opacity = e.target.value;
+      document.getElementById(`opacity${i}-value`).textContent = e.target.value;
     });
-    lastInteraction = millis();
-  });
+    document.getElementById(`color${i}`).addEventListener('input', (e) => {
+      planes[i-1].color = e.target.value;
+    });
+    document.getElementById(`shape${i}`).addEventListener('change', (e) => {
+      planes[i-1].shape = e.target.value;
+    });
+  }
 }
 
 function draw() {
-  clear();
-
-  planes.forEach(plane => {
-    plane.pg.clear();
-    drawShapeSystem(
-      plane.pg,
-      plane.shapeSelect.value(),
-      plane.colorPicker.color(),
-      plane.opacitySlider.value(),
-      plane.sizeSlider.value(),
-      plane.invertCheckbox.checked(),
-      plane.xSlider.value(),
-      plane.ySlider.value(),
-      plane.rotationSlider.value()
-    );
-    image(plane.pg, 0, 0);
-  });
-
-  select('#controls').style('opacity', (millis() - lastInteraction > UI_TIMEOUT) ? '0' : '1');
-}
-
-function mouseMoved() {
-  lastInteraction = millis();
-}
-
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-  planes.forEach(p => {
-    p.pg = createGraphics(windowWidth, windowHeight);
-  });
-}
-
-// function exportCompositeImage() {
-//   let output = createGraphics(width, height);
-//   output.clear();
-//   planes.forEach(p => output.image(p.pg, 0, 0));
-//   save(output, 'lightspace.png');
-// }
-
-function exportCompositeImage() {
-  let exportW = 2400;
-  let exportH = 3600;
-  let output = createGraphics(exportW, exportH);
-  output.clear();
-
-  planes.forEach(plane => {
-    output.push();
-    output.scale(exportW / width, exportH / height);
-    output.image(plane.pg, 0, 0);
-    output.pop();
-  });
-
-  save(output, 'lightspace_export.png');
-}
-
-function createShapePlane(index) {
-  const container = createDiv().parent('#controls');
-  container.child(createP(`Plane ${index + 1}`));
-
-  const shapeSelect = createSelect().parent(container);
-  shapeOptions.forEach(opt => shapeSelect.option(opt));
-  shapeSelect.selected(random(shapeOptions));
-
-  const colorPicker = createColorPicker(color(190, 190, 190)).parent(container);
-
-  container.child(createSpan('Size'));
-  const sizeSlider = createSlider(0, width, width / 2).parent(container);
-
-  container.child(createSpan('Opacity'));
-  const opacitySlider = createSlider(0, 255, 255).parent(container);
-
-  const invertCheckbox = createCheckbox('Invert', false).parent(container);
-
-  container.child(createSpan('X Offset'));
-  const xSlider = createSlider(-width / 2, width / 2, 0).parent(container);
-
-  container.child(createSpan('Y Offset'));
-  const ySlider = createSlider(-height / 2, height / 2, 0).parent(container);
-
-  container.child(createSpan('Rotation'));
-  const rotationSlider = createSlider(0, TWO_PI, 0, 0.01).parent(container);
-
-  return {
-    shapeSelect,
-    colorPicker,
-    sizeSlider,
-    opacitySlider,
-    invertCheckbox,
-    xSlider,
-    ySlider,
-    rotationSlider,
-    pg: createGraphics(width, height)
-  };
+  background(0, 0, 0, 0);
+  for (let i = 0; i < planes.length; i++) {
+    let plane = planes[i];
+    let r = parseInt(plane.color.slice(1, 3), 16);
+    let g = parseInt(plane.color.slice(3, 5), 16);
+    let b = parseInt(plane.color.slice(5, 7), 16);
+    
+    let pg = planeGraphics[i];
+    pg.clear();
+    
+    switch (plane.shape) {
+      case 'full':
+        drawFullPlane(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'circle':
+        drawCircle(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'circle_inverse':
+        drawCircleInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'triangle':
+        drawTriangle(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'triangle_inverse':
+        drawTriangleInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'rectangle':
+        drawRectangle(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'rectangle_inverse':
+        drawRectangleInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'star':
+        drawStar(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'star_inverse':
+        drawStarInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'diamond':
+        drawDiamond(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'diamond_inverse':
+        drawDiamondInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'half':
+        drawHalfPlane(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'half_inverse':
+        drawHalfPlaneInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'diagonal_linear':
+        drawDiagonalLinear(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+      case 'diagonal_linear_inverse':
+        drawDiagonalLinearInverse(pg, r, g, b, (plane.opacity / 100) * 255);
+        break;
+    }
+    
+    image(pg, 0, 0);
+  }
 }

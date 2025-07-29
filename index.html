@@ -493,7 +493,7 @@ label, span, p {
   </body>
 </html> -->
 
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
  <head>
   <meta charset="utf-8"/>
@@ -748,4 +748,289 @@ label, span, p {
       }
   </script>
  </body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Lightspace</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        font-family: sans-serif;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: row;
+      }
+
+      #controls {
+        width: 320px;
+        min-width: 320px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 10px;
+        font-family: sans-serif;
+        overflow-y: auto;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+
+      canvas {
+        border: 3px solid red;
+        margin: auto;
+        display: block;
+        z-index: 0;
+        margin-top: 15px;
+      }
+
+      label, span, p {
+        font-size: 12px;
+        display: block;
+        margin-top: 4px;
+        margin-bottom: 2px;
+      }
+
+      .slider-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: center;
+      }
+
+      button {
+        margin: 4px 2px;
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+
+      input[type=range] {
+  width: 290px;        /* Length of slider */
+  height: 16px;        /* Thickness of slider track */
+  -webkit-appearance: none;
+  background: #ccc;
+  margin-bottom: 6px;
+  border-radius: 6px;
+}
+
+/* Slider thumb */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #333;
+  cursor: pointer;
+  margin-top: -4px;
+}
+
+input[type=range]::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #333;
+  cursor: pointer;
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="controls"></div>
+    <script>
+      let controls = [];
+      let pgLayers = [];
+      const shapeOptions = ['circle', 'square', 'triangle', 'vertical', 'horizontal', 'diagonal', 'diagonal-flipped', 'polygon', 'rhombus', 'octagon', 'pentagon', 'nonagon'];
+
+      function setup() {
+        let aspectRatio = 2 / 3;
+        let maxH = min(windowHeight * 0.9, 900);
+        let canvasH = maxH;
+        let canvasW = canvasH * aspectRatio;
+        createCanvas(canvasW, canvasH);
+
+        const controlsDiv = select('#controls');
+
+        for (let i = 0; i < 3; i++) {
+          const ctrl = createShapePlane(controlsDiv, i);
+          controls.push(ctrl);
+          pgLayers.push(ctrl.pg);
+        }
+
+        createButton('Export Image').parent(controlsDiv).mousePressed(exportCompositeImage);
+        createButton('Randomize').parent(controlsDiv).mousePressed(() => {
+          controls.forEach(ctrl => {
+            ctrl.shapeSelect.selected(random(shapeOptions));
+            ctrl.sizeSlider.value(random(width * 0.25, width));
+            ctrl.xSlider.value(random(-width / 2, width / 2));
+            ctrl.ySlider.value(random(-height / 2, height / 2));
+            ctrl.rotationSlider.value(random(TWO_PI));
+            ctrl.stretchXSlider.value(random(0.5, 2));
+            ctrl.stretchYSlider.value(random(0.5, 2));
+          });
+        });
+      }
+
+      function draw() {
+        background(255);
+        controls.forEach(ctrl => {
+          let pg = ctrl.pg;
+          pg.clear();
+          pg.push();
+          pg.translate(pg.width / 2 + ctrl.xSlider.value(), pg.height / 2 + ctrl.ySlider.value());
+          pg.rotate(ctrl.rotationSlider.value());
+          pg.scale(ctrl.stretchXSlider.value(), ctrl.stretchYSlider.value());
+          drawShapeSystem(
+            pg,
+            ctrl.shapeSelect.value(),
+            ctrl.colorPicker.color(),
+            ctrl.opacitySlider.value(),
+            ctrl.sizeSlider.value(),
+            ctrl.invertCheckbox.checked()
+          );
+          pg.pop();
+          image(pg, 0, 0, width, height);
+        });
+      }
+
+      function createShapePlane(parent, index) {
+        const container = createDiv().parent(parent);
+        container.child(createP('Plane ' + (index + 1)));
+
+        const shapeSelect = createSelect().parent(container);
+        shapeOptions.forEach(opt => shapeSelect.option(opt));
+        shapeSelect.selected(random(shapeOptions));
+
+        const colorPicker = createColorPicker(color(190, 190, 190)).parent(container);
+
+        container.child(createSpan('Opacity'));
+        const opacitySlider = createSlider(0, 255, 255).parent(container);
+
+        container.child(createSpan('Size'));
+        const sizeSlider = createSlider(10, width * 4, width).parent(container);
+
+        container.child(createSpan('Position X'));
+        const xSlider = createSlider(-width / 0.9, width / 0.9, 0).parent(container);
+
+        container.child(createSpan('Position Y'));
+        const ySlider = createSlider(-height / 0.9, height / 0.9, 0).parent(container);
+
+        container.child(createSpan('Rotation'));
+        const rotationSlider = createSlider(0, TWO_PI, 0, 0.01).parent(container);
+
+        container.child(createSpan('Stretch X'));
+        const stretchXSlider = createSlider(0.1, 3, 1, 0.01).parent(container);
+
+        container.child(createSpan('Stretch Y'));
+        const stretchYSlider = createSlider(0.1, 3, 1, 0.01).parent(container);
+
+        const invertCheckbox = createCheckbox('Invert', false).parent(container);
+
+        // Buttons
+        createButton('Reset').parent(container).mousePressed(() => {
+          shapeSelect.selected('circle');
+          colorPicker.color('#bebebe');
+          opacitySlider.value(255);
+          sizeSlider.value(width * 0.5);
+          xSlider.value(0);
+          ySlider.value(0);
+          rotationSlider.value(0);
+          stretchXSlider.value(1);
+          stretchYSlider.value(1);
+          invertCheckbox.checked(false);
+        });
+
+        createButton('Toggle Opacity').parent(container).mousePressed(() => {
+          const val = opacitySlider.value();
+          opacitySlider.value(val === 0 ? 255 : 0);
+        });
+
+        const pg = createGraphics(width, height);
+        pg.clear();
+
+        return {
+          shapeSelect,
+          colorPicker,
+          opacitySlider,
+          sizeSlider,
+          xSlider,
+          ySlider,
+          rotationSlider,
+          invertCheckbox,
+          stretchXSlider,
+          stretchYSlider,
+          pg
+        };
+      }
+
+      function drawShapeSystem(pg, shapeType, col, alpha, size, invert) {
+        pg.fill(red(col), green(col), blue(col), alpha);
+        pg.noStroke();
+
+        if (invert) {
+          pg.erase();
+          pg.ellipse(0, 0, size);
+          pg.noErase();
+          pg.fill(red(col), green(col), blue(col), alpha);
+          pg.rect(-width, -height, width * 3, height * 3);
+        } else {
+          switch (shapeType) {
+            case 'circle': pg.ellipse(0, 0, size); break;
+            case 'square': pg.rectMode(CENTER); pg.rect(0, 0, size, size); break;
+            case 'triangle':
+              let h = size * (Math.sqrt(3) / 2);
+              pg.triangle(-size / 2, h / 3, size / 2, h / 3, 0, -2 * h / 3);
+              break;
+            case 'vertical': pg.rectMode(CENTER); pg.rect(0, 0, size / 2, size); break;
+            case 'horizontal': pg.rectMode(CENTER); pg.rect(0, 0, size, size / 2); break;
+            case 'diagonal':
+              pg.push(); pg.rotate(PI / 4);
+              pg.rectMode(CENTER); pg.rect(0, 0, size, size / 2);
+              pg.pop(); break;
+            case 'diagonal-flipped':
+              pg.push(); pg.rotate(-PI / 4);
+              pg.rectMode(CENTER); pg.rect(0, 0, size, size / 2);
+              pg.pop(); break;
+            case 'polygon': drawRegularPolygon(pg, 0, 0, size / 2, 6); break;
+            case 'rhombus': pg.quad(-size / 2, 0, 0, -size / 2, size / 2, 0, 0, size / 2); break;
+            case 'octagon': drawRegularPolygon(pg, 0, 0, size / 2, 8); break;
+            case 'pentagon': drawRegularPolygon(pg, 0, 0, size / 2, 5); break;
+            case 'nonagon': drawRegularPolygon(pg, 0, 0, size / 2, 9); break;
+          }
+        }
+      }
+
+      function drawRegularPolygon(pg, x, y, radius, npoints) {
+        let angle = TWO_PI / npoints;
+        pg.beginShape();
+        for (let a = 0; a < TWO_PI; a += angle) {
+          let sx = x + cos(a) * radius;
+          let sy = y + sin(a) * radius;
+          pg.vertex(sx, sy);
+        }
+        pg.endShape(CLOSE);
+      }
+
+      function exportCompositeImage() {
+        // let exportW = 3600;
+        // let exportH = 5400;
+        let exportW = 7200;
+        let exportH = 9300;
+        let merged = createGraphics(exportW, exportH);
+        merged.clear();
+        for (let pg of pgLayers) {
+          merged.push();
+          merged.scale(exportW / width, exportH / height);
+          merged.image(pg, 0, 0);
+          merged.pop();
+        }
+        save(merged, 'triple-plane-export.png');
+      }
+
+
+    </script>
+  </body>
 </html>
