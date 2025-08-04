@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Lightspace</title>
+    <title>lightscape</title>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
     <style>
       html, body {
@@ -29,17 +29,16 @@
 
       canvas {
         border: 5px solid black;
-        margin: auto;
-        margin-right: 580px;
+        margin-right: 280px;
         display: block;
         z-index: 0;
-        margin-top: 15px;
+        margin-top: 60px;
       }
 
       label, span, p {
         font-size: 12px;
         display: block;
-        margin-top: 4px;
+        margin-top: px;
         margin-bottom: 2px;
       }
 
@@ -111,17 +110,51 @@ input[type=range]::-moz-range-thumb {
   gap: 10px;
 }
 
+#page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+header {
+  background: #fff;
+  padding: 10px 20px;
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  flex-shrink: 0;
+}
+
+header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+#main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+
     </style>
   </head>
+  
   <body>
     <!-- <div id="controls"></div> -->
-     <body>
+  <div id="page-container">
+    <header>
+      <h1>lightscape</h1>
+    </header>
       <div id="main-container">
         <div id="controls">
           <div id="left-controls"></div>
           <div id="right-controls"></div>
         </div>
         <!-- canvas will be inserted by p5.js -->
+      </div>
       </div>
 
     <script>
@@ -187,7 +220,7 @@ input[type=range]::-moz-range-thumb {
             ctrl.colorPicker.color(),
             ctrl.opacitySlider.value(),
             ctrl.sizeSlider.value(),
-            ctrl.invertCheckbox.checked()
+            // ctrl.invertCheckbox.checked()
           );
           pg.pop();
           image(pg, 0, 0, width, height);
@@ -196,13 +229,32 @@ input[type=range]::-moz-range-thumb {
 
       function createShapePlane(parent, index) {
         const container = createDiv().parent(parent);
-        container.child(createP('Plane ' + (index + 1)));
+        // container.child(createP('Plane ' + (index + 1)));
 
         const shapeSelect = createSelect().parent(container);
         shapeOptions.forEach(opt => shapeSelect.option(opt));
         shapeSelect.selected(random(shapeOptions));
 
         const colorPicker = createColorPicker(color(190, 190, 190)).parent(container);
+        
+                // Buttons
+        createButton('Reset').parent(container).mousePressed(() => {
+          shapeSelect.selected('circle');
+          colorPicker.color('#bebebe');
+          opacitySlider.value(255);
+          sizeSlider.value(width * 0.5);
+          xSlider.value(0);
+          ySlider.value(0);
+          rotationSlider.value(0);
+          stretchXSlider.value(1);
+          stretchYSlider.value(1);
+          // invertCheckbox.checked(false);
+        });
+
+        createButton('Opacity').parent(container).mousePressed(() => {
+          const val = opacitySlider.value();
+          opacitySlider.value(val === 0 ? 255 : 0);
+        });
 
         container.child(createSpan('Opacity'));
         const opacitySlider = createSlider(0, 255, 255).parent(container);
@@ -225,26 +277,9 @@ input[type=range]::-moz-range-thumb {
         container.child(createSpan('Stretch Y'));
         const stretchYSlider = createSlider(0.1, 3, 1, 0.01).parent(container);
 
-        const invertCheckbox = createCheckbox('Invert', false).parent(container);
+        // const invertCheckbox = createCheckbox('Invert', false).parent(container);
 
-        // Buttons
-        createButton('Reset').parent(container).mousePressed(() => {
-          shapeSelect.selected('circle');
-          colorPicker.color('#bebebe');
-          opacitySlider.value(255);
-          sizeSlider.value(width * 0.5);
-          xSlider.value(0);
-          ySlider.value(0);
-          rotationSlider.value(0);
-          stretchXSlider.value(1);
-          stretchYSlider.value(1);
-          invertCheckbox.checked(false);
-        });
 
-        createButton('Toggle Opacity').parent(container).mousePressed(() => {
-          const val = opacitySlider.value();
-          opacitySlider.value(val === 0 ? 255 : 0);
-        });
 
         const pg = createGraphics(width, height);
         pg.clear();
@@ -257,7 +292,7 @@ input[type=range]::-moz-range-thumb {
           xSlider,
           ySlider,
           rotationSlider,
-          invertCheckbox,
+          // invertCheckbox,
           stretchXSlider,
           stretchYSlider,
           pg
